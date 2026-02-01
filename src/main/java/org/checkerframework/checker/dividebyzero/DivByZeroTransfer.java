@@ -76,7 +76,32 @@ public class DivByZeroTransfer extends CFTransfer {
    */
   private AnnotationMirror refineLhsOfComparison(
       Comparison operator, AnnotationMirror lhs, AnnotationMirror rhs) {
-    // TODO
+    AnnotationMirror zero = reflect(Zero.class);
+    AnnotationMirror pos = reflect(Positive.class);
+    AnnotationMirror neg = reflect(Negative.class);
+    
+    switch (operator) {
+      case EQ:
+        return glb(lhs, rhs);
+      case NE:
+        if (equal(rhs, zero)) {
+          // lhs != 0, so lhs is positive or negative
+          return glb(lhs, lub(pos, neg));
+        }
+        break;
+      case LT:
+        if (equal(rhs, zero)) return glb(lhs, neg);
+        break;
+      case LE:
+        if (equal(rhs, zero)) return glb(lhs, lub(zero, neg));
+        break;
+      case GT:
+        if (equal(rhs, zero)) return glb(lhs, pos);
+        break;
+      case GE:
+        if (equal(rhs, zero)) return glb(lhs, lub(zero, pos));
+        break;
+    }
     return lhs;
   }
 
@@ -97,7 +122,29 @@ public class DivByZeroTransfer extends CFTransfer {
    */
   private AnnotationMirror arithmeticTransfer(
       BinaryOperator operator, AnnotationMirror lhs, AnnotationMirror rhs) {
-    // TODO
+    AnnotationMirror zero = reflect(Zero.class);
+    AnnotationMirror pos = reflect(Positive.class);
+    AnnotationMirror neg = reflect(Negative.class);
+    
+    switch (operator) {
+      case PLUS:
+        if (equal(lhs, zero)) return rhs;
+        if (equal(rhs, zero)) return lhs;
+        if (equal(lhs, pos) && equal(rhs, pos)) return pos;
+        if (equal(lhs, neg) && equal(rhs, neg)) return neg;
+        break;
+      case MINUS:
+        if (equal(rhs, zero)) return lhs;
+        if (equal(lhs, rhs)) return zero;
+        if (equal(lhs, zero) && equal(rhs, pos)) return neg;
+        if (equal(lhs, zero) && equal(rhs, neg)) return pos;
+        break;
+      case TIMES:
+        if (equal(lhs, zero) || equal(rhs, zero)) return zero;
+        if ((equal(lhs, pos) && equal(rhs, pos)) || (equal(lhs, neg) && equal(rhs, neg))) return pos;
+        if ((equal(lhs, pos) && equal(rhs, neg)) || (equal(lhs, neg) && equal(rhs, pos))) return neg;
+        break;
+    }
     return top();
   }
 
